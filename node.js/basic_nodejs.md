@@ -162,15 +162,17 @@ setTimeout( 콜백함수, 시간)
 
 이걸 보낼 때는 res.send  res.json 둘 다 가능
 
-## 파라미터 값으로 라우팅하기
+## get 이용
+
+### 파라미터 값으로 라우팅하기
 
 - params이용하기
 
 ```jsx
 app.get('/user/:id', (req, res) => {  
     const q = req.params
-    console.log(q)
-    res.send({'userid' : q.id})
+    console.log(q) //콘솔 창에 띄워줌
+    res.send({'userid' : q.id}) //서버 창에 띄워줌
 })
 ```
 
@@ -184,7 +186,7 @@ id로 받은 값이 params로 들어옴.
 app.get('/user/:id', (req, res) => {  
  
     const q = req.query
-    console.log(q)
+    console.log(q)   //q.q하면 ddingju나오고 q.age하면 21나옴.
 
     res.send({'userid' : q.id})
 })
@@ -195,3 +197,149 @@ app.get('/user/:id', (req, res) => {
 뒤에오는값 받아서 서버에 전달.
 
 서버는 그냥 /page를 보여줄지, 특정 조건 /page
+
+```jsx
+//url :   localhost:3000/user/asdf?q=ddingju&age=21
+```
+
+cmd창: [Object: null prototype] { q: 'ddingju', age: '20' }
+
+원하는 걸 보여주고 싶다면
+
+```jsx
+res.send({'userage' : q.age})
+```
+
+## post 이용
+
+주소창 방식으로 불러오는 것이 아니므로 body 불러옴.
+
+## api 서버 실습
+
+```jsx
+app.get('/sound/:name', (req, res) => {  
+    const { name } = req.params  //받은거 파라미터로 뽑아내기
+    //이러면 p.name 할 필요 없이 해당키값에 바로들어감.
+
+    if (name == "dog"){
+        res.json({'sound' : '멍멍'})
+    } else if (name == "cat"){
+        res.json({'sound' : '야옹'})
+    } else {
+        res.json({'sound' : '알수없음'})
+    }
+})
+```
+
+## 프론트엔드 연결 실습
+
+- CORS 이슈
+
+html 파일에서 어떤 서버에 요청했을때 보안상  일단 막음.
+
+CORS 설정을 안해두면 차단됨. 
+
+node의 미들웨어 모듈. 많이 쓰인다.
+
+```powershell
+npm install cors
+```
+
+- ajax
+
+js의 라이브러리. 브라우저가 가진 XMLHttpRequest객체를 이용해서 전체 페이지를 새로 고치지 않고도 페이지 일부만을 위한 데이터 로드 가능.
+
+- XMLHttpRequest
+
+웹 페이지를 전부 로딩하고도 서버로부터 데이터를 요청하거나 전송받을 수 있으며, 웹페이지를 전부 로딩하지 않고도 일부만 갱신하는 게 가능해짐.
+
+⇒  ajax는 js를 사용한 비동기 통신, 클라이언트와 서버 간에 xml 데이터를 주고받는 기술
+
+- fetch
+
+js에서 서버로 네트워크 요청을 보내고 응답을 받을 수 있도록 해주는 메서드.
+
+XMLHttpRequest과 차이: promise를 기반으로 구성되어 있어 간편한 사용
+
+```jsx
+fetch(url)
+.then(res => {
+  console.log(res)
+})
+.catch(error => {
+  console.log(error)
+})
+```
+
+```jsx
+const express = require('express')
+var cors = require('cors')
+const app = express() //express 서버가 app에 들어감.
+const port = 3000
+
+app.use(cors()) // 이 서버에서 사용하겠다.
+//빈 괄호:모두 허용. 괄호 안에서 조건설정
+//다른 파일에서 요청해도 받아줌.
+
+app.get('/', (req, res) => {
+    res.send('Hello World')
+})
+
+app.get('/sound/:name', (req, res) => {  
+    const { name } = req.params  //받은거 파라미터로 뽑아내기
+    //이러면 p.name 할 필요 없이 해당키값에 바로들어감.
+
+    if (name == "dog"){
+        res.json({'sound' : '멍멍'})
+    } else if (name == "cat"){
+        res.json({'sound' : '야옹'})
+    } else {
+        res.json({'sound' : '알수없음'})
+    }
+    
+})
+
+app.get('/cat', (req, res) => {
+    res.send('고양이')
+})
+
+app.listen(port, () => {
+		console.log(`Example app listening on port ${port}`)
+})
+```
+
+index.html파일
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프론트엔드 연결 실습</title>
+</head>
+<body>
+    <h1 id = "sound"></h1>
+    <input id = "name" type = "text">
+    <button onclick = "getSound()">API 요청</button>
+    <script>
+        function getSound(){
+            const name = document.getElementById('name').value//인풋 value를 name에 입력해줌
+            fetch(`http://localhost:3000/sound/${name}`) //api요청 시 변수 실어서 보냄
+            //'가 아닌 `로 감싸면 문자열 안에 변수 넣을 수 있음.
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data.sound)
+                document.getElementById('sound').innerHTML = data.sound //html sound안에 넣어주겠다
+                //그니까 이걸로 html 파일안에 받은데이터로 글쓰는것임.
+            });
+        }
+    </script>
+</body>
+</html>
+```
+
+만약 index.js에서 cors 안 해두면 index,html파일에서 열 때 오류남.
+
+fetch는 [http://localhost:3000/sound/${name}](http://localhost:3000/sound/$%7Bname%7D)인데 너 지금 요청하는 곳은 index.html이잖아
